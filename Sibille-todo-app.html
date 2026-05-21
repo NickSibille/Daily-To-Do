@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Daily To-Do</title>
+<link rel="icon" type="image/png" href="sibille_thumb_logo.png" />
+<link rel="apple-touch-icon" href="sibille_thumb_logo.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --paper:#1A4876;
+    --card:#22568A;
+    --ink:#FFFFFF;
+    --ink-soft:#BBCBDE;
+    --ink-faint:#86A0BE;
+    --line:rgba(255,255,255,.16);
+    --line-strong:rgba(255,255,255,.34);
+    --flag:#FF6F57;
+    --flag-soft:rgba(255,111,87,.18);
+    --flag-line:rgba(255,111,87,.5);
+    --slate:#7FA6CE;
+    --done:#5FC08D;
+    --shadow:0 1px 0 rgba(0,0,0,.06),0 10px 28px -18px rgba(0,0,0,.6);
+    --mono:'IBM Plex Mono',ui-monospace,'SFMono-Regular',Menlo,monospace;
+    --sans:'IBM Plex Sans',system-ui,-apple-system,Segoe UI,sans-serif;
+    --serif:'IBM Plex Mono',ui-monospace,'SFMono-Regular',Menlo,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:var(--sans);
+    background:var(--paper);
+    background-image:radial-gradient(circle at 1px 1px, rgba(255,255,255,.05) 1px, transparent 0);
+    background-size:22px 22px;
+    color:var(--ink);
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+    padding:40px 20px 80px;
+  }
+  .wrap{max-width:860px;margin:0 auto}
+
+  /* Header */
+  header{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap;margin-bottom:22px;
+    animation:fade .5s ease both}
+  .title h1{font-family:var(--serif);font-weight:500;font-size:42px;letter-spacing:-.02em;line-height:1}
+  .title .sub{font-family:var(--mono);font-size:11.5px;color:var(--ink-soft);margin-top:9px;letter-spacing:.02em;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--ink-faint);display:inline-block;flex:none}
+  .dot.live{background:var(--done);box-shadow:0 0 0 3px rgba(142,155,126,.2)}
+  .dot.off{background:var(--flag);box-shadow:0 0 0 3px rgba(194,64,43,.15)}
+
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap}
+  button{font-family:var(--sans);cursor:pointer;border:none;background:none;color:inherit;font-size:14px}
+  .btn{border:1px solid var(--line-strong);background:var(--card);color:var(--ink);
+    padding:8px 13px;border-radius:9px;font-weight:500;font-size:13px;transition:.15s;box-shadow:var(--shadow);white-space:nowrap}
+  .btn:hover{border-color:var(--ink);transform:translateY(-1px)}
+  .btn.primary{background:var(--ink);color:var(--card);border-color:var(--ink)}
+  .btn.primary:hover{background:#EAF1F8}
+
+  /* Sections */
+  section{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px 24px;margin-bottom:18px;
+    box-shadow:var(--shadow);animation:fade .5s ease both}
+  section.overdue{background:linear-gradient(180deg,rgba(255,111,87,.16),rgba(255,111,87,.04));border-color:var(--flag-line)}
+  .sec-head{display:flex;align-items:baseline;justify-content:space-between;gap:14px;margin-bottom:16px}
+  .sec-head h2{font-family:var(--serif);font-weight:500;font-size:22px;letter-spacing:-.01em}
+  .sec-head .meta{font-family:var(--mono);font-size:11.5px;color:var(--ink-soft)}
+  .overdue .sec-head h2{color:var(--flag)}
+  .flag-badge{font-family:var(--mono);font-size:11px;background:var(--flag);color:#fff;border-radius:20px;padding:2px 9px;font-weight:500}
+
+  /* Category block */
+  .cat{margin-bottom:18px}
+  .cat:last-child{margin-bottom:6px}
+  .cat-head{display:flex;align-items:center;gap:10px;padding-bottom:6px;border-bottom:1px solid var(--line);margin-bottom:8px}
+  .cat-head .name{font-family:var(--sans);font-weight:600;font-size:13px;letter-spacing:.05em;text-transform:uppercase;color:var(--slate)}
+  .cat-head .count{font-family:var(--mono);font-size:11px;color:var(--ink-faint);margin-left:auto}
+  .cat-head .x{opacity:0;color:var(--ink-faint);font-size:16px;line-height:1;padding:0 4px;transition:.15s}
+  .cat-head:hover .x{opacity:1}
+  .cat-head .x:hover{color:var(--flag)}
+
+  /* Item */
+  .item{display:flex;align-items:flex-start;gap:11px;padding:6px 6px 6px 2px;border-radius:8px;transition:background .12s}
+  .item:hover{background:rgba(255,255,255,.06)}
+  .check{flex:none;width:18px;height:18px;margin-top:2px;border:1.5px solid var(--line-strong);border-radius:5px;
+    background:rgba(255,255,255,.08);cursor:pointer;position:relative;transition:.15s}
+  .check:hover{border-color:var(--ink)}
+  .check.on{background:var(--done);border-color:var(--done)}
+  .check.on::after{content:"";position:absolute;left:5px;top:1px;width:4px;height:9px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(43deg)}
+  .item .txt{flex:1;font-size:15px;cursor:text;word-break:break-word;padding-top:0}
+  .item.done .txt{color:var(--ink-faint);text-decoration:line-through;text-decoration-color:var(--line-strong)}
+  .item .txt input{font-family:var(--sans);font-size:15px;width:100%;border:none;border-bottom:1.5px solid var(--ink);background:transparent;color:var(--ink);padding:0 0 2px}
+  .item .del{opacity:0;flex:none;color:var(--ink-faint);font-size:17px;line-height:1;padding:0 4px;transition:.15s}
+  .item:hover .del{opacity:1}
+  .item .del:hover{color:var(--flag)}
+  .item .date-tag{font-family:var(--mono);font-size:10.5px;color:var(--flag);background:var(--flag-soft);border:1px solid var(--flag-line);
+    padding:1px 7px;border-radius:6px;flex:none;margin-top:1px}
+  .item .ovr-cat{font-family:var(--mono);font-size:10.5px;color:var(--ink-faint);flex:none;margin-top:2px}
+  .item .move{opacity:0;flex:none;font-family:var(--mono);font-size:11px;color:var(--slate);border:1px solid var(--line-strong);
+    border-radius:6px;padding:2px 7px;transition:.15s;white-space:nowrap}
+  .item:hover .move{opacity:1}
+  .item .move:hover{border-color:var(--slate);background:var(--slate);color:#fff}
+
+  /* Add row */
+  .add{display:flex;align-items:center;gap:8px;margin-top:4px;padding-left:2px}
+  .add .plus{color:var(--ink-faint);font-size:18px;line-height:1;flex:none;width:18px;text-align:center}
+  .add input{flex:1;font-family:var(--sans);font-size:14.5px;border:none;background:transparent;color:var(--ink);padding:6px 0}
+  .add input::placeholder{color:var(--ink-faint)}
+  .add input:focus{outline:none}
+  .cat-add{border-top:1px dashed var(--line);margin-top:6px;padding-top:10px}
+  .cat-add input{font-family:var(--sans);font-size:13px;border:1px solid var(--line-strong);background:rgba(255,255,255,.07);
+    border-radius:8px;padding:7px 11px;width:230px;max-width:100%}
+  .cat-add input:focus{outline:none;border-color:var(--ink)}
+
+  .empty{color:var(--ink-faint);font-size:14px;font-style:italic;padding:8px 2px}
+
+  /* Archive */
+  .arch-toggle{width:100%;display:flex;align-items:center;justify-content:space-between;background:none;border:none;cursor:pointer}
+  .arch-toggle h2{font-family:var(--serif);font-weight:500;font-size:22px}
+  .arch-toggle .chev{font-family:var(--mono);color:var(--ink-soft);transition:.2s}
+  .arch-toggle.open .chev{transform:rotate(90deg)}
+  .arch-body{margin-top:16px;display:none}
+  .arch-body.open{display:block}
+  .day{border-top:1px solid var(--line);padding:12px 0}
+  .day:first-child{border-top:none}
+  .day-head{display:flex;align-items:center;gap:12px;cursor:pointer;user-select:none}
+  .day-head .date{font-family:var(--mono);font-size:13px;font-weight:500}
+  .day-head .dow{font-size:13px;color:var(--ink-soft)}
+  .day-head .stat{font-family:var(--mono);font-size:11px;color:var(--ink-faint);margin-left:auto}
+  .day-head .chev{font-family:var(--mono);color:var(--ink-faint);font-size:12px;transition:.2s}
+  .day-head.open .chev{transform:rotate(90deg)}
+  .day-body{display:none;padding:8px 0 4px 6px}
+  .day-body.open{display:block}
+
+  footer{max-width:860px;margin:26px auto 0;font-family:var(--mono);font-size:11px;color:var(--ink-faint);line-height:1.7;
+    border-top:1px solid var(--line);padding-top:16px}
+  footer b{color:var(--ink-soft);font-weight:500}
+  code{background:rgba(255,255,255,.12);padding:1px 5px;border-radius:4px;font-family:var(--mono)}
+
+  .banner{background:rgba(255,111,87,.16);border:1px solid var(--flag-line);border-radius:12px;padding:13px 16px;margin-bottom:18px;
+    display:flex;align-items:center;gap:14px;flex-wrap:wrap;animation:fade .4s ease both}
+  .banner span{font-size:13.5px;color:var(--ink);flex:1;min-width:200px}
+  .banner .btn{box-shadow:none}
+
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  section:nth-of-type(1){animation-delay:.05s}
+  section:nth-of-type(2){animation-delay:.1s}
+  section:nth-of-type(3){animation-delay:.15s}
+  @media(max-width:560px){
+    .title h1{font-size:33px}
+    body{padding:24px 12px 60px}
+    section{padding:18px 16px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="title">
+      <h1>Daily To-Do</h1>
+      <div class="sub"><span id="status-dot" class="dot off"></span><span id="status-text">No file connected</span></div>
+    </div>
+    <div class="toolbar" id="toolbar"></div>
+  </header>
+
+  <div id="banner-slot"></div>
+  <div id="app"></div>
+</div>
+
+<footer>
+  <div><b>How your data is stored.</b> Everything lives in one plain-text file (<code>.txt</code>) on your computer. The app rewrites it on every change — readable and auditable by you, your team, or an AI, with no database and no lock-in.</div>
+  <div style="margin-top:8px"><b>Format.</b> <code># YYYY-MM-DD</code> is a day · <code>## Name</code> is a category · <code>- [ ]</code> / <code>- [x]</code> is an item (open / done). Hand-edit it while the app is closed; it re-parses on next open.</div>
+</footer>
+
+<script>
+"use strict";
+
+/* ---------- state ---------- */
+let state = { days: {} };      // { "YYYY-MM-DD": { categories:[ {name, items:[{id,text,done}]} ] } }
+let fileHandle = null;
+let supportsFS = ('showOpenFilePicker' in window) && ('showSaveFilePicker' in window);
+const LS_KEY = 'dailytodo:backup:v1';
+
+/* ---------- helpers ---------- */
+const uid = () => Math.random().toString(36).slice(2,8) + Date.now().toString(36).slice(-4);
+const esc = s => s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function fmt(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function today(){ return fmt(new Date()); }
+function dow(dateStr){
+  const [y,m,d] = dateStr.split('-').map(Number);
+  return new Date(y, m-1, d).toLocaleDateString(undefined,{weekday:'long', month:'short', day:'numeric'});
+}
+function getDay(date){ if(!state.days[date]) state.days[date] = {categories:[]}; return state.days[date]; }
+function getCat(day, name){
+  let c = day.categories.find(c => c.name.toLowerCase() === name.toLowerCase());
+  if(!c){ c = {name, items:[]}; day.categories.push(c); }
+  return c;
+}
+function findItem(date, id){
+  const day = state.days[date]; if(!day) return null;
+  for(const cat of day.categories){
+    const i = cat.items.findIndex(it => it.id === id);
+    if(i !== -1) return {cat, item:cat.items[i], index:i};
+  }
+  return null;
+}
+
+/* ---------- parse / serialize the .txt ---------- */
+function parse(text){
+  const days = {};
+  let curDate = null, curCat = null;
+  const dateRe = /^#\s+(\d{4}-\d{2}-\d{2})\s*$/;
+  const itemRe = /^[-*]\s*\[([ xX])\]\s?(.*)$/;
+  for(const raw of text.split(/\r?\n/)){
+    const line = raw.replace(/\s+$/,'');
+    let m;
+    if((m = line.match(dateRe))){
+      curDate = m[1]; days[curDate] = days[curDate] || {categories:[]}; curCat = null; continue;
+    }
+    if(line.startsWith('## ')){
+      if(!curDate){ curDate = today(); days[curDate] = days[curDate] || {categories:[]}; }
+      const name = line.slice(3).trim() || 'General';
+      const day = days[curDate];
+      curCat = day.categories.find(c => c.name.toLowerCase()===name.toLowerCase());
+      if(!curCat){ curCat = {name, items:[]}; day.categories.push(curCat); }
+      continue;
+    }
+    if((m = line.match(itemRe))){
+      if(!curDate){ curDate = today(); days[curDate] = days[curDate] || {categories:[]}; }
+      if(!curCat){ const day=days[curDate]; curCat=day.categories.find(c=>c.name==='General'); if(!curCat){curCat={name:'General',items:[]};day.categories.push(curCat);} }
+      curCat.items.push({ id: uid(), text: m[2].trim(), done: m[1].toLowerCase()==='x' });
+    }
+  }
+  return { days };
+}
+function serialize(st){
+  const out = [
+    '# DAILY TO-DO LOG',
+    '# Maintained automatically by the Daily To-Do app. Plain text, safe to read or audit by hand or by AI.',
+    '# Structure:  "# YYYY-MM-DD" = a day   ·   "## Name" = a category   ·   "- [ ]" open / "- [x]" done.',
+    ''
+  ];
+  for(const date of Object.keys(st.days).sort()){
+    const cats = st.days[date].categories.filter(c => c.items.length || true);
+    out.push('# ' + date);
+    for(const cat of st.days[date].categories){
+      out.push('## ' + cat.name);
+      for(const it of cat.items) out.push('- [' + (it.done?'x':' ') + '] ' + it.text);
+    }
+    out.push('');
+  }
+  return out.join('\n');
+}
+
+/* ---------- persistence ---------- */
+function idb(){ return new Promise((res,rej)=>{ const r=indexedDB.open('dailytodo',1);
+  r.onupgradeneeded=()=>r.result.createObjectStore('kv'); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }); }
+async function idbSet(k,v){ const db=await idb(); return new Promise((res)=>{ const t=db.transaction('kv','readwrite'); t.objectStore('kv').put(v,k); t.oncomplete=()=>res(); t.onerror=()=>res(); }); }
+async function idbGet(k){ const db=await idb(); return new Promise((res)=>{ const r=db.transaction('kv','readonly').objectStore('kv').get(k); r.onsuccess=()=>res(r.result||null); r.onerror=()=>res(null); }); }
+
+function backupLocal(){ try{ localStorage.setItem(LS_KEY, serialize(state)); }catch(e){} }
+async function ensurePerm(h, mode){
+  const o={mode};
+  if((await h.queryPermission(o))==='granted') return true;
+  if((await h.requestPermission(o))==='granted') return true;
+  return false;
+}
+async function save(){
+  backupLocal();
+  if(!fileHandle) return;
+  try{
+    if(!(await ensurePerm(fileHandle,'readwrite'))) return;
+    const w = await fileHandle.createWritable();
+    await w.write(serialize(state));
+    await w.close();
+  }catch(e){ console.warn('write failed', e); }
+}
+
+/* ---------- file actions ---------- */
+async function openFile(){
+  try{
+    const [h] = await window.showOpenFilePicker({ multiple:false,
+      types:[{description:'Plain text', accept:{'text/plain':['.txt']}}] });
+    fileHandle = h;
+    const f = await h.getFile();
+    state = parse(await f.text());
+    getDay(today());
+    await idbSet('handle', h);
+    clearBanner(); render();
+  }catch(e){ /* user cancelled */ }
+}
+async function createFile(){
+  try{
+    fileHandle = await window.showSaveFilePicker({ suggestedName:'todo-log.txt',
+      types:[{description:'Plain text', accept:{'text/plain':['.txt']}}] });
+    if(Object.keys(state.days).length===0){ state={days:{}}; }
+    getDay(today());
+    await save();
+    await idbSet('handle', fileHandle);
+    clearBanner(); render();
+  }catch(e){}
+}
+async function reconnect(h){
+  try{
+    if(!(await ensurePerm(h,'readwrite'))) return;
+    fileHandle = h;
+    const f = await h.getFile();
+    state = parse(await f.text());
+    getDay(today());
+    clearBanner(); render();
+  }catch(e){ console.warn(e); }
+}
+// fallback (no File System Access API): load via input, save via download
+function loadViaInput(){
+  const inp = document.createElement('input'); inp.type='file'; inp.accept='.txt,text/plain';
+  inp.onchange = async () => { const f=inp.files[0]; if(!f) return; state=parse(await f.text()); getDay(today()); clearBanner(); render(); };
+  inp.click();
+}
+function downloadTxt(){
+  const blob = new Blob([serialize(state)], {type:'text/plain'});
+  const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='todo-log.txt'; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+}
+
+/* ---------- mutations ---------- */
+async function mutate(fn){ fn(); await save(); render(); }
+function addItem(date, catName, text){
+  text = text.trim(); if(!text) return;
+  getCat(getDay(date), catName).items.push({id:uid(), text, done:false});
+}
+function toggle(date, id){ const r=findItem(date,id); if(r) r.item.done=!r.item.done; }
+function delItem(date, id){ const r=findItem(date,id); if(r) r.cat.items.splice(r.index,1); }
+function editItem(date, id, text){ const r=findItem(date,id); if(r){ text=text.trim(); if(text) r.item.text=text; else r.cat.items.splice(r.index,1);} }
+function addCategory(date, name){ name=name.trim(); if(!name) return; getCat(getDay(date), name); }
+function delCategory(date, idx){ const d=state.days[date]; if(d) d.categories.splice(idx,1); }
+function moveToToday(srcDate, id){
+  const r = findItem(srcDate, id); if(!r) return;
+  const item = r.item; r.cat.items.splice(r.index,1);
+  item.done = false;
+  getCat(getDay(today()), r.cat.name).items.push(item);
+}
+
+/* ---------- overdue collection ---------- */
+function overdue(){
+  const t = today(); const rows = [];
+  for(const date of Object.keys(state.days).sort()){
+    if(date >= t) continue;
+    for(const cat of state.days[date].categories)
+      for(const it of cat.items)
+        if(!it.done) rows.push({date, cat:cat.name, item:it});
+  }
+  return rows; // ascending by date => most overdue first
+}
+
+/* ---------- rendering ---------- */
+let archiveOpen = false;
+const openDays = new Set();
+
+function itemHtml(date, it, opts={}){
+  const tag = opts.overdue ? `<span class="date-tag">${esc(it._date)}</span>` : '';
+  const ovrCat = opts.overdue ? `<span class="ovr-cat">${esc(it._cat)}</span>` : '';
+  const move = opts.overdue ? `<button class="move" data-act="move" data-date="${it._date}" data-id="${it.id}">→ today</button>` : '';
+  const del = opts.overdue ? '' : `<button class="del" data-act="del" data-date="${date}" data-id="${it.id}" title="Delete">×</button>`;
+  const editable = opts.overdue ? '' : 'data-edit="1"';
+  return `<div class="item ${it.done?'done':''}">
+    <div class="check ${it.done?'on':''}" data-act="toggle" data-date="${opts.overdue?it._date:date}" data-id="${it.id}"></div>
+    ${tag}
+    <div class="txt" ${editable} data-date="${date}" data-id="${it.id}">${esc(it.text)}</div>
+    ${ovrCat}${move}${del}
+  </div>`;
+}
+
+function todaySection(){
+  const t = today();
+  const day = getDay(t);
+  let total=0, done=0;
+  const cats = day.categories.map((cat, ci) => {
+    const d = cat.items.filter(i=>i.done).length; total+=cat.items.length; done+=d;
+    const items = cat.items.map(it => itemHtml(t, it)).join('') || '<div class="empty">No items yet.</div>';
+    return `<div class="cat">
+      <div class="cat-head">
+        <span class="name">${esc(cat.name)}</span>
+        <span class="count">${d}/${cat.items.length}</span>
+        <button class="x" data-act="delcat" data-date="${t}" data-idx="${ci}" title="Remove category">×</button>
+      </div>
+      ${items}
+      <div class="add">
+        <span class="plus">+</span>
+        <input data-act="additem" data-date="${t}" data-cat="${esc(cat.name)}" placeholder="Add to ${esc(cat.name)}…" />
+      </div>
+    </div>`;
+  }).join('');
+  const empty = day.categories.length ? '' : '<div class="empty">No categories yet — add one below to start today.</div>';
+  return `<section>
+    <div class="sec-head">
+      <h2>Today</h2>
+      <span class="meta">${dow(t)} · ${done}/${total} done</span>
+    </div>
+    ${cats || empty}
+    <div class="cat-add">
+      <input data-act="addcat" data-date="${t}" placeholder="+ New category (e.g. Site, Permits, Calls)…" />
+    </div>
+  </section>`;
+}
+
+function overdueSection(){
+  const rows = overdue();
+  if(!rows.length) return '';
+  const items = rows.map(r => { const it={...r.item, _date:r.date, _cat:r.cat}; return itemHtml(r.date, it, {overdue:true}); }).join('');
+  return `<section class="overdue">
+    <div class="sec-head">
+      <h2>Carried over <span class="flag-badge">${rows.length}</span></h2>
+      <span class="meta">unfinished, oldest first</span>
+    </div>
+    ${items}
+  </section>`;
+}
+
+function archiveSection(){
+  const t = today();
+  const dates = Object.keys(state.days).filter(d => d < t).sort().reverse();
+  const body = dates.length ? dates.map(date => {
+    const day = state.days[date];
+    let total=0, done=0; day.categories.forEach(c=>{total+=c.items.length;done+=c.items.filter(i=>i.done).length;});
+    const isOpen = openDays.has(date);
+    const inner = day.categories.map(cat => {
+      const items = cat.items.map(it => itemHtml(date, it)).join('');
+      return `<div class="cat"><div class="cat-head"><span class="name">${esc(cat.name)}</span></div>${items}</div>`;
+    }).join('') || '<div class="empty">Empty.</div>';
+    return `<div class="day">
+      <div class="day-head ${isOpen?'open':''}" data-act="day" data-date="${date}">
+        <span class="chev">▸</span>
+        <span class="date">${date}</span><span class="dow">${dow(date)}</span>
+        <span class="stat">${done}/${total}</span>
+      </div>
+      <div class="day-body ${isOpen?'open':''}">${inner}</div>
+    </div>`;
+  }).join('') : '<div class="empty">No earlier days recorded yet.</div>';
+  return `<section>
+    <button class="arch-toggle ${archiveOpen?'open':''}" data-act="archtoggle">
+      <h2>Archive</h2><span class="chev">▸ ${dates.length} day${dates.length===1?'':'s'}</span>
+    </button>
+    <div class="arch-body ${archiveOpen?'open':''}">${body}</div>
+  </section>`;
+}
+
+function renderToolbar(){
+  const tb = document.getElementById('toolbar');
+  if(supportsFS){
+    tb.innerHTML = `<button class="btn" data-act="open">Open file</button>
+      <button class="btn primary" data-act="create">New file</button>`;
+  }else{
+    tb.innerHTML = `<button class="btn" data-act="loadinput">Load .txt</button>
+      <button class="btn primary" data-act="download">Save / Download</button>`;
+  }
+}
+
+function renderStatus(){
+  const dot = document.getElementById('status-dot'), txt = document.getElementById('status-text');
+  if(fileHandle){ dot.className='dot live'; txt.textContent = (fileHandle.name||'todo-log.txt') + ' · auto-saving'; }
+  else if(!supportsFS){ dot.className='dot off'; txt.textContent='This browser can’t bind a file — use Load / Download'; }
+  else { dot.className='dot off'; txt.textContent='No file connected'; }
+}
+
+function render(){
+  renderStatus();
+  document.getElementById('app').innerHTML =
+    overdueSection() + todaySection() + archiveSection();
+}
+
+/* ---------- banners ---------- */
+function clearBanner(){ document.getElementById('banner-slot').innerHTML=''; }
+function showReconnect(name){
+  document.getElementById('banner-slot').innerHTML =
+    `<div class="banner"><span><b>Reconnect your file</b> — “${esc(name)}”. Browsers require one click to re-grant access after a reload.</span>
+     <button class="btn primary" data-act="reconnect">Reconnect</button></div>`;
+}
+
+/* ---------- event delegation ---------- */
+document.addEventListener('click', async (e) => {
+  const el = e.target.closest('[data-act]'); if(!el) return;
+  const act = el.dataset.act, date = el.dataset.date, id = el.dataset.id;
+  switch(act){
+    case 'open': return openFile();
+    case 'create': return createFile();
+    case 'loadinput': return loadViaInput();
+    case 'download': return downloadTxt();
+    case 'reconnect': { const h = await idbGet('handle'); if(h) reconnect(h); return; }
+    case 'toggle': return mutate(()=>toggle(date,id));
+    case 'del': return mutate(()=>delItem(date,id));
+    case 'move': return mutate(()=>moveToToday(date,id));
+    case 'delcat': {
+      const idx = +el.dataset.idx; const d=state.days[date];
+      const has = d && d.categories[idx] && d.categories[idx].items.length;
+      if(has && !confirm('Remove this category and its '+d.categories[idx].items.length+' item(s)?')) return;
+      return mutate(()=>delCategory(date, idx));
+    }
+    case 'archtoggle': { archiveOpen=!archiveOpen; render(); return; }
+    case 'day': { if(openDays.has(date)) openDays.delete(date); else openDays.add(date); render(); return; }
+  }
+});
+
+// inline-edit: click an editable item's text
+document.addEventListener('click', (e) => {
+  const t = e.target.closest('.txt[data-edit]'); if(!t || t.querySelector('input')) return;
+  const date=t.dataset.date, id=t.dataset.id, cur=t.textContent;
+  t.innerHTML = `<input value="${esc(cur)}" />`;
+  const inp=t.querySelector('input'); inp.focus(); inp.setSelectionRange(cur.length,cur.length);
+  const commit = () => mutate(()=>editItem(date,id,inp.value));
+  inp.addEventListener('keydown', ev => { if(ev.key==='Enter'){ev.preventDefault();commit();} if(ev.key==='Escape'){render();} });
+  inp.addEventListener('blur', commit);
+});
+
+// add item / add category on Enter
+document.addEventListener('keydown', (e) => {
+  const inp = e.target.closest('input[data-act]'); if(!inp || e.key!=='Enter') return;
+  e.preventDefault();
+  const act=inp.dataset.act, date=inp.dataset.date, v=inp.value;
+  if(act==='additem'){ mutate(()=>addItem(date, inp.dataset.cat, v)); }
+  else if(act==='addcat'){ const name=v.trim(); if(!name) return;
+    mutate(()=>addCategory(date,name)).then(()=>{ const f=document.querySelector(`input[data-act="additem"][data-cat="${CSS.escape(name)}"]`); if(f) f.focus(); }); }
+});
+
+/* ---------- boot ---------- */
+(async function init(){
+  renderToolbar();
+  // restore local backup so we never show empty
+  try{ const b=localStorage.getItem(LS_KEY); if(b) state=parse(b); }catch(e){}
+  getDay(today());
+  if(supportsFS){
+    const h = await idbGet('handle');
+    if(h){
+      try{
+        if((await h.queryPermission({mode:'readwrite'}))==='granted'){ await reconnect(h); }
+        else { showReconnect(h.name||'todo-log.txt'); }
+      }catch(e){ showReconnect(h.name||'todo-log.txt'); }
+    }
+  }
+  render();
+})();
+</script>
+</body>
+</html>
